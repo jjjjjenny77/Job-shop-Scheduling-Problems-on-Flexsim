@@ -1,0 +1,255 @@
+Table p = Table("population");
+int NUM_MACHINE = 15;
+int NUM_JOB = 20; 
+int NUM_ITERATION = 100;
+int NUM_CHROME = 40;
+int NUM_BIT = NUM_JOB * NUM_MACHINE; 
+double Pc = 1;  
+double Pm = 0.2;      
+int NUM_PARENT = NUM_CHROME;                        
+int NUM_CROSSOVER = Math.round(Pc * NUM_CHROME / 2);       
+int NUM_CROSSOVER_2 = Math.round(NUM_CROSSOVER*2);             
+int NUM_MUTATION = (Pm * NUM_CHROME * NUM_BIT);
+
+//initialize population
+p.setSize(40,300);
+
+for(int i = 1; i < NUM_CHROME+1; i++){
+ int num = 1;
+ Table a = Table("chrome");
+ a.setSize(300,1);
+ for(int j = 1; j <= NUM_JOB; j++){
+  for(int k = 0; k < NUM_MACHINE; k++){
+   a[num][1] = j;
+   num += 1;
+  }
+ }
+ int numm = 1;
+ Table result = Table.query("SELECT * FROM chrome ORDER BY rand()");
+ for(int j = 1; j < 301; j++){
+ p[i][j] = result[j][1];
+ }
+}   
+
+// evaluationPop
+Array array_p = Table("population").clone();
+Array array_pop_fit = Array(40);
+
+for(int i = 1; i <= array_p.length; i++){
+ 
+ Array array_S = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
+ Array array_C = array_S;
+ //fitness function
+ //S[i][j] = Starting time of job i at machine j
+ //Array array_C = array_S; //C[i][j] = Completion time of job i at machine j
+ Array array_B = Array(NUM_MACHINE); //B[j] = Available time of machine j
+ Array opJob = Array(NUM_JOB); //opJob[i] = current operation ID of job i
+
+ for(int j = 1; j <= NUM_BIT; j++){
+  int m = gettablenum("MachineOrder", array_p[i][j], opJob[array_p[i][j]]);
+  
+  if( opJob[array_p[i][j]] != 0){
+   array_S[array_p[i][j]][m] = max(array_B[m], array_C[array_p[i][j]][gettablenum("MachineOrder", array_p[i][j], opJob[array_p[i][j]] -1)]);
+  }else{
+   array_S[array_p[i][j]][m] = array_B[m];
+  }
+  array_B[m] = array_S[array_p[i][j]][m] + gettablenum("pTime",array_p[i][j],opJob[array_p[i][j]]);
+  array_C[array_p[i][j]][m] = array_B[m];
+  opJob[array_p[i][j]] += 1;
+ }
+ array_pop_fit[i] = -1 * Math.max(array_B);
+}
+
+
+ 
+for(int i = 1; i <= NUM_ITERATION; i++){
+ //selection
+ Array array_a;
+ for(int j = 1; j <= NUM_PARENT ; j++){
+ 	Array array_selected;
+ 	
+ 	// array_selected = Table("popNew").clone();
+  Table select = Table.query("select * from numchrome order by rand() limit 2");
+  int l;
+  int k;
+  l = select[1][1];
+  k = select[2][1];
+  if(array_pop_fit[l]>array_pop_fit[k]){
+   array_selected = array_p[l];
+   array_a.append(array_selected);
+  }
+  else{
+   array_selected = array_p[k];
+   array_a.append(array_selected);
+  }
+ }
+
+ //crossover_one_point
+ Array a2; //children
+ // array_a2 = array_p;
+
+ for(int i = 1; i <= NUM_CROSSOVER ; i++){
+  int c = duniform(1, NUM_BIT); // slice
+
+  Table select = Table.query("select * from numchrome order by rand() limit 2");
+  int j;
+  int k;
+  j = select[1][1]; // chrom
+  k = select[2][1];
+  
+  Array array_child1; 
+  Array array_child1_2;
+  Array array_child1_back;
+  Array array_child2;
+  Array array_child2_2; 
+  Array array_child2_back;
+  
+  array_child1 = array_p[j];
+  array_child1_2 = array_p[j];
+  array_child2 = array_p[k];
+  array_child2_2 = array_p[k];
+  
+  array_child1_back = array_child1_2.slice(c,301);
+  array_child1 = array_child1.slice(1,c);
+  array_child2_back = array_child2_2.slice(c,301);
+  array_child2 = array_child2.slice(1,c);
+  
+  array_child1.append(array_child2_back);
+  array_child2.append(array_child1_back);
+  
+  a2.append([array_child1]);
+  a2.append([array_child2]);
+  
+  }
+  
+  // evaluationPop
+  Array array_offspring = a2;
+  Array array_offspring_fit = Array(40);
+  for(int i = 1; i <= array_offspring.length; i++){
+   
+   Array array_S = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
+   Array array_C = array_S;
+   //fitness function
+   //S[i][j] = Starting time of job i at machine j
+   //Array array_C = array_S; //C[i][j] = Completion time of job i at machine j
+   Array array_B = Array(NUM_MACHINE); //B[j] = Available time of machine j
+   Array opJob = Array(NUM_JOB); //opJob[i] = current operation ID of job i
+
+   for(int j = 1; j <= NUM_BIT; j++){
+    int m = gettablenum("MachineOrder", array_offspring[i][j], opJob[array_offspring[i][j]]);
+    
+    if( opJob[array_offspring[i][j]] != 0){
+     array_S[array_offspring[i][j]][m] = max(array_B[m], array_C[array_offspring[i][j]][gettablenum("MachineOrder", array_offspring[i][j], opJob[array_offspring[i][j]] -1)]);
+    }else{
+     array_S[array_offspring[i][j]][m] = array_B[m];
+    }
+    array_B[m] = array_S[array_offspring[i][j]][m] + gettablenum("pTime",array_offspring[i][j],opJob[array_offspring[i][j]]);
+    array_C[array_offspring[i][j]][m] = array_B[m];
+    opJob[array_offspring[i][j]] += 1;
+   }
+   array_offspring_fit[i] = -1 * Math.max(array_B);
+  }
+   
+  
+  
+   //replace
+  Array pop;
+  pop = a2;
+  int nummm = 1;
+  for(int j = 1; j <= 40; j++){
+   for(int k = 1; k <= 300; k++){
+    pop[j][k] = array_a[nummm];
+    nummm += 1;
+   }
+  }
+  
+  Array b;
+  Array b_fit;
+  b = pop;
+  b.append(a2);
+  
+  b_fit = array_pop_fit;
+  b_fit.append(array_offspring_fit);
+  Table aa = Table("sortChrome");
+  for(int m  = 1; m <= 80; m++){
+   for(int n = 1; n <= 301; n++){
+    if(n != 301){
+     aa[m][n] = b[m][n];
+    }else{
+     aa[m][n] = b_fit[m];
+    }
+   }
+  }
+  
+  Table aaa = Table.query("select * from sortChrome order by Col301 DESC");
+  aaa.cloneTo(Table("sorted"));
+  
+  Array array_pop_new = Table("sorted").clone();
+  array_pop_new = array_pop_new.slice(1,41);
+  
+  
+  Array array_pop_neww;
+  array_pop_neww = Table("popNew").clone();
+  
+  Array new_pop_fit = Array(40);
+ for(int m  = 1; m <= 40; m++){
+   for(int n = 1; n <= 301; n++){
+    if(n != 301){
+     array_pop_neww[m][n] = array_pop_new[m][n];
+     settablenum("popNew",m,n,array_pop_neww[m][n]);
+    }else{
+     new_pop_fit[m] = array_pop_new[m][n];
+     settablenum("popfitNew",1,m,new_pop_fit[m]);
+     
+    }
+   }
+  }
+	
+	array_pop_fit = array_pop_fit.slice(1,41);
+	for(int m = 1; m<= 40; m++){
+		array_pop_fit[m] = gettablenum("popfitNew", 1, m);
+	}
+	
+ 
+ 	array_p = Table("popNew").clone();
+ 	
+ 
+}
