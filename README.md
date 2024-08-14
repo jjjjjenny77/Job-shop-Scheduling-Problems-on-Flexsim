@@ -1,5 +1,5 @@
 # Job-Shop-Scheduling-Problems-on-Flexsim
-> This note record and share the final project of Simulation course about constructing FlexSim models to solve Job-Shop scheduling problem, and find the minimum Cmax
+> This note record and share the final project of Simulation course in 【112下】 about constructing FlexSim models to solve Job-Shop scheduling problem, and find the minimum Cmax
 ## Problem instances: 
 Demirkol’s instances cscmax 20×15 (DMU41 – DMU45) (https://optimizizer.com/DMU.php)
 ## Goals:
